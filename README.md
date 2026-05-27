@@ -1,0 +1,1 @@
+# beanalytic-case

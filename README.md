@@ -27,7 +27,21 @@ Cada camada é isolada: se a Silver falhar, o Bronze original permanece intacto 
 
 **Tratamento de erros:** retries=3 com delay de 5 minutos. A API do BCB tem latência variável — essa configuração absorve falhas transitórias sem intervenção manual.
 
-## Como Executar Localmente
+
+## Como Executar com Docker (recomendado)
+
+Pre-requisitos: Docker e Docker Compose instalados.
+
+    git clone https://github.com/guisefe/beanalytic-case
+    cd beanalytic-case
+    docker compose up
+
+Aguarda 1-2 minutos e acessa http://localhost:8080
+Login: admin / Senha: admin
+
+Na interface, aciona a DAG selic_pipeline manualmente.
+
+## Como Executar (sem Docker) Localmente
 
 Pré-requisitos: Python 3.12+ e pip.
 

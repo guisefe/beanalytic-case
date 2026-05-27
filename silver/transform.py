@@ -1,6 +1,10 @@
-import pandas as pd
+import sys
 from pathlib import Path
+import pandas as pd
 from datetime import datetime
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.quality import check_not_empty, check_no_nulls, check_column_types, check_value_range
 
 INPUT_PATH = Path("data/bronze/selic_raw.parquet")
 OUTPUT_PATH = Path("data/silver/selic_clean.parquet")
@@ -20,23 +24,16 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     nada é assumido silenciosamente.
     """
 
-    # Converte data de string BR para datetime
-    # errors='coerce' transforma datas inválidas em NaT em vez de explodir
     df["data"] = pd.to_datetime(df["data"], format="%d/%m/%Y", errors="coerce")
-
-    # Garante que valor é float — defensivo caso a API mude comportamento
     df["valor"] = pd.to_numeric(df["valor"], errors="coerce")
 
-    # Adiciona colunas de contexto — úteis na Gold sem precisar recalcular
     df["ano"] = df["data"].dt.year
     df["mes"] = df["data"].dt.month
 
-    # Checagem de qualidade — loga mas não explode
     nulos = df.isnull().sum()
     if nulos.any():
         print(f"[AVISO] Nulos encontrados:\n{nulos[nulos > 0]}")
 
-    # Remove linhas com data ou valor nulo — sem esses dois, o registro é inútil
     antes = len(df)
     df = df.dropna(subset=["data", "valor"])
     depois = len(df)
@@ -57,6 +54,13 @@ def save_silver(df: pd.DataFrame) -> None:
 def run():
     df = load_bronze()
     df = transform(df)
+
+    # Checagens de qualidade — Silver
+    check_not_empty(df, layer="Silver")
+    check_no_nulls(df, columns=["data", "valor"], layer="Silver")
+    check_column_types(df, {"valor": "float", "ano": "int", "mes": "int"}, layer="Silver")
+    check_value_range(df, column="valor", min_val=0.0, max_val=5.0, layer="Silver")
+
     save_silver(df)
 
 

@@ -1,6 +1,10 @@
-import pandas as pd
+import sys
 from pathlib import Path
+import pandas as pd
 from datetime import datetime
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.quality import check_not_empty, check_no_nulls, check_column_types
 
 INPUT_PATH = Path("data/silver/selic_clean.parquet")
 OUTPUT_PATH = Path("data/gold/selic_metrics.parquet")
@@ -18,8 +22,6 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     Gera métricas consolidadas por mês.
     Todas as decisões de agregação são explícitas e justificadas.
     """
-
-    # Agrupa por ano e mês — cada linha do resultado = um mês
     monthly = (
         df.groupby(["ano", "mes"])
         .agg(
@@ -31,12 +33,8 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
 
-    # Variação mensal — quanto a média mudou em relação ao mês anterior
-    # pct_change() calcula a variação percentual entre linhas consecutivas
     monthly["variacao_mensal"] = monthly["media_mensal"].pct_change() * 100
 
-    # Taxa acumulada anual — produto dos fatores diários agrupado por ano
-    # (1 + taxa_diaria) composto ao longo dos dias úteis do ano
     annual = (
         df.groupby("ano")["valor"]
         .apply(lambda x: ((1 + x / 100).prod() - 1) * 100)
@@ -44,7 +42,6 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
         .rename(columns={"valor": "acumulado_anual"})
     )
 
-    # Junta as métricas mensais com o acumulado anual
     result = monthly.merge(annual, on="ano", how="left")
 
     print(f"[{datetime.now():%H:%M:%S}] {len(result)} meses agregados.")
@@ -60,6 +57,12 @@ def save_gold(df: pd.DataFrame) -> None:
 def run():
     df = load_silver()
     df = aggregate(df)
+
+    # Checagens de qualidade — Gold
+    check_not_empty(df, layer="Gold")
+    check_no_nulls(df, columns=["ano", "mes", "media_mensal"], layer="Gold")
+    check_column_types(df, {"media_mensal": "float", "dias_uteis": "int"}, layer="Gold")
+
     save_gold(df)
 
 

@@ -1,7 +1,11 @@
+import sys
+from pathlib import Path
 import requests
 import pandas as pd
-from pathlib import Path
 from datetime import datetime
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.quality import check_not_empty, check_no_nulls
 
 BCB_URL = (
     "https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados"
@@ -20,7 +24,7 @@ def fetch_selic() -> pd.DataFrame:
     print(f"[{datetime.now():%H:%M:%S}] Conectando na API do BCB...")
 
     response = requests.get(BCB_URL, timeout=30)
-    response.raise_for_status()  # se vier erro 4xx/5xx, estoura aqui mesmo
+    response.raise_for_status()
 
     raw = response.json()
 
@@ -41,6 +45,11 @@ def save_bronze(df: pd.DataFrame) -> None:
 
 def run():
     df = fetch_selic()
+
+    # Checagens de qualidade — Bronze
+    check_not_empty(df, layer="Bronze")
+    check_no_nulls(df, columns=["data", "valor"], layer="Bronze")
+
     save_bronze(df)
 
 

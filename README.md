@@ -63,10 +63,6 @@ Pre-requisitos: Python 3.12+ e pip.
     airflow db migrate
     airflow dags test selic_pipeline
 
-## Rodar os Testes
-
-    pytest tests/ -v
-
 ## Testes
 
 O projeto tem 9 testes unitários cobrindo as camadas Silver, Gold e o módulo de qualidade.

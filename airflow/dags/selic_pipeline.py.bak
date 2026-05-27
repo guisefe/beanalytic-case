@@ -1,11 +1,10 @@
 import sys
-import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 
 from airflow.sdk import dag, task
 
-# aponta pra raiz do projeto — onde vivem bronze/, silver/, gold/ e config.py
+# Aponta para a raiz do projeto — onde vivem bronze/, silver/ e gold/
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -13,7 +12,6 @@ from bronze.ingest import run as bronze_run
 from silver.transform import run as silver_run
 from gold.aggregate import run as gold_run
 
-log = logging.getLogger(__name__)
 
 default_args = {
     "owner": "guilherme.senis",
@@ -36,14 +34,17 @@ def selic_pipeline():
 
     @task()
     def ingestao_bronze():
+        """Task 1 — Consome a API do BCB e salva dados brutos em Parquet."""
         bronze_run()
 
     @task()
     def transformacao_silver():
+        """Task 2 — Limpa e padroniza os dados do Bronze."""
         silver_run()
 
     @task()
     def agregacao_gold():
+        """Task 3 — Gera métricas mensais e acumulado anual."""
         gold_run()
 
     ingestao_bronze() >> transformacao_silver() >> agregacao_gold()

@@ -1,3 +1,8 @@
+[![Pipeline Tests](https://github.com/guisefe/beanalytic-case/actions/workflows/test.yml/badge.svg)](https://github.com/guisefe/beanalytic-case/actions/workflows/test.yml)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![Airflow](https://img.shields.io/badge/Airflow-3.x-red)
+![Parquet](https://img.shields.io/badge/Format-Parquet-green)
+
 # beAnalytic Case — Pipeline SELIC
 
 Pipeline de dados construído com Apache Airflow seguindo a arquitetura Medallion (Bronze → Silver → Gold), consumindo dados reais da API do Banco Central do Brasil.

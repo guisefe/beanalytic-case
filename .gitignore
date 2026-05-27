@@ -6,5 +6,5 @@ __pycache__/
 venv/
 *.parquet
 logs/
-airflow.db
-airflow.cfg
+airflow/
+.pytest_cache/

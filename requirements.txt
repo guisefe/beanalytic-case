@@ -1,0 +1,5 @@
+apache-airflow==2.8.1
+pandas==2.1.4
+requests==2.31.0
+pyarrow==14.0.2
+fastparquet==2023.10.1

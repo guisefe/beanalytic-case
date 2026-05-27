@@ -2,6 +2,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Airflow](https://img.shields.io/badge/Airflow-3.x-red)
 ![Parquet](https://img.shields.io/badge/Format-Parquet-green)
+![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 
 # beAnalytic Case — Pipeline SELIC
 
@@ -65,6 +66,24 @@ Pre-requisitos: Python 3.12+ e pip.
 ## Rodar os Testes
 
     pytest tests/ -v
+
+## Testes
+
+O projeto tem 9 testes unitários cobrindo as camadas Silver, Gold e o módulo de qualidade.
+
+    pytest tests/ -v
+
+| Teste | O que valida |
+|-------|-------------|
+| test_silver_converte_data | data vira datetime após transformação |
+| test_silver_converte_valor | valor vira float após transformação |
+| test_silver_adiciona_ano_mes | colunas ano e mes são criadas |
+| test_silver_remove_nulos | registros com nulos são removidos |
+| test_gold_gera_60_meses | Gold gera pelo menos 1 mês agregado |
+| test_gold_tem_colunas_esperadas | Gold tem todas as colunas de métricas |
+| test_quality_not_empty_levanta_erro | erro se DataFrame vazio |
+| test_quality_no_nulls_levanta_erro | erro se há nulos em colunas críticas |
+| test_quality_value_range_levanta_erro | erro se valores fora do range |
 
 ## Resultado
 

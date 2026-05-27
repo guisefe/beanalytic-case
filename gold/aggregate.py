@@ -1,27 +1,24 @@
 import sys
+import logging
 from pathlib import Path
+
 import pandas as pd
-from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from config import SILVER_PATH, GOLD_PATH
 from utils.quality import check_not_empty, check_no_nulls, check_column_types
 
-INPUT_PATH = Path("data/silver/selic_clean.parquet")
-OUTPUT_PATH = Path("data/gold/selic_metrics.parquet")
+log = logging.getLogger(__name__)
 
 
 def load_silver() -> pd.DataFrame:
-    """Carrega os dados limpos da camada Silver."""
-    df = pd.read_parquet(INPUT_PATH)
-    print(f"[{datetime.now():%H:%M:%S}] {len(df)} registros carregados do Silver.")
+    df = pd.read_parquet(SILVER_PATH)
+    log.info(f"{len(df)} registros carregados do Silver")
     return df
 
 
 def aggregate(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Gera métricas consolidadas por mês.
-    Todas as decisões de agregação são explícitas e justificadas.
-    """
     monthly = (
         df.groupby(["ano", "mes"])
         .agg(
@@ -33,8 +30,10 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
 
+    # variação percentual mês a mês — NaN no primeiro mês é esperado
     monthly["variacao_mensal"] = monthly["media_mensal"].pct_change() * 100
 
+    # acumulado anual via juros compostos — (1 + taxa_diaria).prod() - 1
     annual = (
         df.groupby("ano")["valor"]
         .apply(lambda x: ((1 + x / 100).prod() - 1) * 100)
@@ -43,28 +42,25 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     result = monthly.merge(annual, on="ano", how="left")
-
-    print(f"[{datetime.now():%H:%M:%S}] {len(result)} meses agregados.")
+    log.info(f"{len(result)} meses agregados")
     return result
 
 
 def save_gold(df: pd.DataFrame) -> None:
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(OUTPUT_PATH, index=False)
-    print(f"[{datetime.now():%H:%M:%S}] Salvo em: {OUTPUT_PATH}")
+    GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(GOLD_PATH, index=False)
+    log.info(f"gold salvo em {GOLD_PATH}")
 
 
 def run():
     df = load_silver()
     df = aggregate(df)
-
-    # Checagens de qualidade — Gold
     check_not_empty(df, layer="Gold")
     check_no_nulls(df, columns=["ano", "mes", "media_mensal"], layer="Gold")
     check_column_types(df, {"media_mensal": "float", "dias_uteis": "int"}, layer="Gold")
-
     save_gold(df)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     run()

@@ -16,17 +16,21 @@ Cada camada é isolada: se a Silver falhar, o Bronze original permanece intacto 
 - bronze/ingest.py — Ingestão da API do BCB
 - silver/transform.py — Limpeza e padronização
 - gold/aggregate.py — Métricas consolidadas
+- utils/quality.py — Checagens de qualidade entre camadas
+- config.py — Paths e variáveis centralizados
+- tests/test_pipeline.py — Testes unitários (9/9)
 
 ## Decisões Técnicas
 
 **Por que Parquet?** Formato colunar, comprimido e com tipagem — padrão da indústria. CSV seria mais lento e sem controle de tipos.
 
-**Por que schedule=None?** O pipeline consome dados históricos (2020–2024). Faz mais sentido rodar sob demanda do que agendar diariamente dados que não mudam.
+**Por que schedule=None?** O pipeline consome dados históricos (2020-2024). Faz mais sentido rodar sob demanda do que agendar diariamente dados que não mudam.
 
 **Por que Bronze/Silver/Gold?** Rastreabilidade. Se a lógica de agregação mudar, reprocessamos só a Gold sem tocar nos dados brutos.
 
 **Tratamento de erros:** retries=3 com delay de 5 minutos. A API do BCB tem latência variável — essa configuração absorve falhas transitórias sem intervenção manual.
 
+**Checagens de qualidade:** cada camada valida volume, nulos, tipos e range de valores antes de passar os dados adiante.
 
 ## Como Executar com Docker (recomendado)
 
@@ -41,18 +45,21 @@ Login: admin / Senha: admin
 
 Na interface, aciona a DAG selic_pipeline manualmente.
 
-## Como Executar (sem Docker) Localmente
+## Como Executar sem Docker
 
-Pré-requisitos: Python 3.12+ e pip.
+Pre-requisitos: Python 3.12+ e pip.
 
     git clone https://github.com/guisefe/beanalytic-case
     cd beanalytic-case
     pip install -r requirements.txt
     export AIRFLOW_HOME=$(pwd)/airflow
+    export AIRFLOW__CORE__DAGS_FOLDER=$(pwd)/dags
     airflow db migrate
-    airflow standalone
+    airflow dags test selic_pipeline
 
-Depois acesse http://localhost:8080 e acione a DAG selic_pipeline manualmente.
+## Rodar os Testes
+
+    pytest tests/ -v
 
 ## Resultado
 

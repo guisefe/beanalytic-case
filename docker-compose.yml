@@ -33,7 +33,17 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    command: airflow db migrate
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create
+          --username admin
+          --password admin
+          --firstname Guilherme
+          --lastname Senis
+          --role Admin
+          --email gui.senis635@gmail.com
+      "
     depends_on:
       postgres:
         condition: service_healthy

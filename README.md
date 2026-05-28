@@ -48,9 +48,11 @@ Pré-requisitos: Docker e Docker Compose instalados.
 
     git clone https://github.com/guisefe/beanalytic-case
     cd beanalytic-case
-    docker compose up
+    docker compose up --build
 
-Aguarda 2-3 minutos e acessa http://localhost:8080
+Na primeira execução o build pode levar 5-10 minutos — o Airflow é instalado com as constraints oficiais para garantir compatibilidade total.
+
+Aguarda o container estabilizar e acessa http://localhost:8080
 Login: admin / Senha: admin
 
 Aciona a DAG selic_pipeline manualmente pelo painel.

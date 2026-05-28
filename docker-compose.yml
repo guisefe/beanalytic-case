@@ -37,14 +37,20 @@ services:
     command: >
       bash -c "
         pip install -r /opt/airflow/requirements.txt --quiet &&
+        airflow db init &&
         airflow db migrate
       "
-    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
     restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
 
   airflow-webserver:
     <<: *airflow-common
@@ -52,3 +58,6 @@ services:
     ports:
       - "8080:8080"
     restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully

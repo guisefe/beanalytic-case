@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from airflow.sdk import dag, task
+from airflow.decorators import dag, task
 
 # aponta pra raiz do projeto — onde vivem bronze/, silver/, gold/ e config.py
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -26,7 +26,7 @@ default_args = {
 @dag(
     dag_id="selic_pipeline",
     description="Pipeline Medallion da Taxa SELIC — BCB API → Bronze → Silver → Gold",
-    schedule=None,
+    schedule_interval=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     default_args=default_args,

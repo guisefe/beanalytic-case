@@ -4,56 +4,62 @@
 ![Parquet](https://img.shields.io/badge/Format-Parquet-green)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 
-# beAnalytic Case — Pipeline SELIC
+# Pipeline SELIC — beAnalytic Case
 
-Pipeline de dados construído com Apache Airflow seguindo a arquitetura Medallion (Bronze → Silver → Gold), consumindo dados reais da API do Banco Central do Brasil.
+Pipeline de dados construído com Apache Airflow e arquitetura Medallion, consumindo dados reais da taxa SELIC via API do Banco Central do Brasil.
+
+O objetivo é demonstrar como estruturar um pipeline modular, testado e pronto para produção — da ingestão bruta até métricas consolidadas prontas para análise.
 
 ## Arquitetura
 
-Cada camada é isolada: se a Silver falhar, o Bronze original permanece intacto para reprocessamento.
+Cada camada tem responsabilidade única e é isolada das demais. Se a Silver falhar, o dado original no Bronze permanece intacto para reprocessamento.
 
-- **Bronze** → dados brutos em Parquet, sem transformações
-- **Silver** → limpeza de tipos, conversão de datas, tratamento de nulos
-- **Gold** → média mensal, variação mensal, taxa acumulada anual
+- **Bronze** — dado bruto exatamente como veio da API, sem nenhuma transformação
+- **Silver** — limpeza de tipos, conversão de datas, remoção de nulos
+- **Gold** — média mensal, variação mês a mês e taxa acumulada anual
 
-## Estrutura do Projeto
+## Estrutura
 
-- dags/selic_pipeline.py — DAG principal do Airflow
-- bronze/ingest.py — Ingestão da API do BCB
-- silver/transform.py — Limpeza e padronização
-- gold/aggregate.py — Métricas consolidadas
-- utils/quality.py — Checagens de qualidade entre camadas
-- config.py — Paths e variáveis centralizados
-- tests/test_pipeline.py — Testes unitários (9/9)
+- dags/selic_pipeline.py — DAG principal, orquestra as 3 tasks
+- bronze/ingest.py — consome a API do BCB
+- silver/transform.py — limpa e padroniza os dados
+- gold/aggregate.py — gera as métricas consolidadas
+- utils/quality.py — checagens de qualidade entre camadas
+- config.py — paths e variáveis centralizados
+- tests/test_pipeline.py — testes unitários (9/9)
 
 ## Decisões Técnicas
 
-**Por que Parquet?** Formato colunar, comprimido e com tipagem — padrão da indústria. CSV seria mais lento e sem controle de tipos.
+**Parquet em vez de CSV** — formato colunar e comprimido, com tipagem nativa. Padrão da indústria para pipelines analíticos.
 
-**Por que schedule=None?** O pipeline consome dados históricos (2020-2024). Faz mais sentido rodar sob demanda do que agendar diariamente dados que não mudam.
+**schedule=None** — os dados são históricos (2020-2024) e não mudam. Rodar sob demanda faz mais sentido do que agendar execuções diárias desnecessárias.
 
-**Por que Bronze/Silver/Gold?** Rastreabilidade. Se a lógica de agregação mudar, reprocessamos só a Gold sem tocar nos dados brutos.
+**Camadas separadas** — rastreabilidade. Se a lógica de agregação mudar, reprocessamos só a Gold sem tocar nos dados brutos.
 
-**Tratamento de erros:** retries=3 com delay de 5 minutos. A API do BCB tem latência variável — essa configuração absorve falhas transitórias sem intervenção manual.
+**retries=3 com delay de 5 minutos** — a API do BCB tem latência variável. Essa configuração absorve falhas transitórias sem intervenção manual.
 
-**Checagens de qualidade:** cada camada valida volume, nulos, tipos e range de valores antes de passar os dados adiante.
+**Checagens de qualidade** — cada camada valida volume, nulos, tipos e range de valores antes de passar os dados adiante. Falha cedo, falha rápido.
+
+**Dockerfile customizado** — a imagem oficial do Airflow no Docker Hub é 2.x, incompatível com a API 3.x usada no projeto. A imagem customizada garante paridade entre desenvolvimento e produção.
 
 ## Como Executar com Docker (recomendado)
 
-Pre-requisitos: Docker e Docker Compose instalados.
+Pré-requisitos: Docker e Docker Compose instalados.
 
     git clone https://github.com/guisefe/beanalytic-case
     cd beanalytic-case
     docker compose up
 
-Aguarda 1-2 minutos e acessa http://localhost:8080
+Aguarda 2-3 minutos e acessa http://localhost:8080
 Login: admin / Senha: admin
 
-Na interface, aciona a DAG selic_pipeline manualmente.
+Aciona a DAG selic_pipeline manualmente pelo painel.
+
+O ambiente foi desenvolvido via GitHub Codespaces e o Docker validado externamente — por limitação de hardware local.
 
 ## Como Executar sem Docker
 
-Pre-requisitos: Python 3.12+ e pip.
+Pré-requisitos: Python 3.12+ e pip.
 
     git clone https://github.com/guisefe/beanalytic-case
     cd beanalytic-case
@@ -64,8 +70,6 @@ Pre-requisitos: Python 3.12+ e pip.
     airflow dags test selic_pipeline
 
 ## Testes
-
-O projeto tem 9 testes unitários cobrindo as camadas Silver, Gold e o módulo de qualidade.
 
     pytest tests/ -v
 
@@ -79,19 +83,21 @@ O projeto tem 9 testes unitários cobrindo as camadas Silver, Gold e o módulo d
 | test_gold_tem_colunas_esperadas | Gold tem todas as colunas de métricas |
 | test_quality_not_empty_levanta_erro | erro se DataFrame vazio |
 | test_quality_no_nulls_levanta_erro | erro se há nulos em colunas críticas |
-| test_quality_value_range_levanta_erro | erro se valores fora do range |
+| test_quality_value_range_levanta_erro | erro se valores fora do range esperado |
 
 ## Resultado
 
 | Camada | Registros |
 |--------|-----------|
 | Bronze | 1.255 dias brutos |
-| Silver | 1.255 dias limpos |
-| Gold   | 60 meses agregados |
+| Silver | 1.255 dias válidos |
+| Gold | 60 meses agregados |
 
 ## Stack
 
 - Apache Airflow 3.x
 - Python 3.12
-- Pandas + PyArrow
+- Pandas + PyArrow + FastParquet
+- Docker + Docker Compose
+- pytest + GitHub Actions
 - API pública do Banco Central do Brasil

@@ -15,7 +15,6 @@ x-airflow-common: &airflow-common
     - ./utils:/opt/airflow/utils
     - ./data:/opt/airflow/data
     - ./config.py:/opt/airflow/config.py
-    - ./requirements.txt:/opt/airflow/requirements.txt
   depends_on:
     postgres:
       condition: service_healthy
@@ -34,12 +33,7 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    command: >
-      bash -c "
-        pip install -r /opt/airflow/requirements.txt --quiet &&
-        airflow db init &&
-        airflow db migrate
-      "
+    command: airflow db init
     depends_on:
       postgres:
         condition: service_healthy

@@ -33,7 +33,7 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    command: airflow db init
+    command: airflow db migrate
     depends_on:
       postgres:
         condition: service_healthy

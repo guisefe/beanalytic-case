@@ -57,7 +57,7 @@ Login: admin / Senha: admin
 
 Aciona a DAG selic_pipeline manualmente pelo painel.
 
-O ambiente foi desenvolvido via GitHub Codespaces e o Docker validado externamente — por limitação de hardware local.
+O ambiente foi desenvolvido via GitHub Codespaces, garantindo reprodutibilidade independente do sistema operacional local.
 
 ## Como Executar sem Docker
 

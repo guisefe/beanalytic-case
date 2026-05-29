@@ -48,9 +48,17 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
 
 def save_gold(df: pd.DataFrame) -> None:
     GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(GOLD_PATH, index=False)
-    log.info(f"gold salvo em {GOLD_PATH}")
 
+    df.to_parquet(GOLD_PATH, index=False)
+
+    csv_path = GOLD_PATH.with_suffix(".csv")
+    df.to_csv(csv_path, index=False)
+
+    log.info(f"gold salvo em {GOLD_PATH}")
+    log.info(f"csv salvo em {csv_path}")
+
+    log.info("Preview da camada Gold:")
+    log.info(f"\n{df.head().to_string()}")
 
 def run():
     df = load_silver()

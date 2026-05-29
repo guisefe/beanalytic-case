@@ -95,6 +95,21 @@ Pré-requisitos: Python 3.12+ e pip.
 | Silver | 1.255 dias válidos |
 | Gold | 60 meses agregados |
 
+### Métricas geradas na camada Gold
+
+- Média mensal da SELIC
+- Variação percentual mês a mês
+- Taxa acumulada anual
+- Valor mínimo diário
+- Valor máximo diário
+- Quantidade de dias úteis por mês
+
+Os resultados são exportados em:
+- `selic_metrics.parquet`
+- `selic_metrics.csv`
+
+Além disso, um preview das métricas é exibido nos logs da task Gold no Airflow.
+
 ## Stack
 
 - Apache Airflow 3.x
